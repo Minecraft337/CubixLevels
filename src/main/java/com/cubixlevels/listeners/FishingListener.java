@@ -32,6 +32,7 @@ public class FishingListener implements Listener {
 
                 double xp = plugin.getConfig().getDouble("fishing.xp-per-catch", 5.0);
                 plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
+                plugin.setLastAction(player.getUniqueId(), "Fishing");
                 player.sendMessage(MessagesManager.format("xp.fishing", "§7🎣 §a+{amount} XP §7(Fishing)",
                         "amount", formatXp(xp)));
             }

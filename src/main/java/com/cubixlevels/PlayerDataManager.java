@@ -164,6 +164,7 @@ public class PlayerDataManager {
             Player player = plugin.getServer().getPlayer(uuid);
             if (player != null && player.isOnline()) {
                 addXp(uuid, xpAmount, player);
+                plugin.setLastAction(uuid, "Playtime");
                 player.sendMessage(MessagesManager.format("xp.playtime", "§7⏱ §a+{amount} XP §7for playing ({minutes} min)",
                         "amount", String.valueOf(xpAmount), "minutes", String.valueOf(interval / 60)));
             }
@@ -181,6 +182,7 @@ public class PlayerDataManager {
         data.lastDailyBonusDay = java.time.LocalDate.now().toEpochDay();
         int xp = plugin.getConfig().getInt("settings.daily-bonus-xp", 50);
         addXp(uuid, xp, player);
+        plugin.setLastAction(uuid, "Daily");
         player.sendMessage(MessagesManager.format("xp.daily_bonus_claim", "§6☀ §eDaily bonus: §a+{amount} XP",
                 "amount", String.valueOf(xp)));
     }

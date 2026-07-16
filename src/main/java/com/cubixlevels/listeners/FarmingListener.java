@@ -102,6 +102,7 @@ public class FarmingListener implements Listener {
     private void grantXp(Player player, double xp, String name) {
         if (xp <= 0) return;
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
+        plugin.setLastAction(player.getUniqueId(), "Farming");
         player.sendMessage(MessagesManager.replace(
                 MessagesManager.getString("xp.farming", "§7🌾 §a+{amount} XP §7({action})"),
                 "amount", formatXp(xp), "action", name));

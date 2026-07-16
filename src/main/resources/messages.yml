@@ -20,17 +20,19 @@
 #   {max}     — максимальный уровень
 #   {amount}  — количество (XP, блоков, минут и т.д.)
 #   {action}  — название действия (шахтёрство, фермерство и т.д.)
+#   {target}  — целевой игрок (для админ-команд)
 
 # ─── Общие сообщения ─────────────────────────
 general:
   player_only: "§c❌ Только игрок может использовать эту команду!"
   no_permission: "§c❌ У вас нет прав на это действие!"
+  player_not_found: "§c❌ Игрок §e{player} §cне найден!"
   config_reloaded: "§a✔ Конфигурация CubixLevels перезагружена!"
   already_daily: "§c❌ Вы уже получили ежедневный бонус сегодня!"
+  console_not_allowed: "§c❌ Эту команду нельзя выполнять из консоли без указания игрока!"
 
 # ─── XP Уведомления ──────────────────────────
 xp:
-  # Формат: §7<иконка> §a+{amount} XP §7({action})
   mining: "§7⛏ §a+{amount} XP §7(Шахтёрство)"
   farming: "§7🌾 §a+{amount} XP §7({action})"
   woodcutting: "§7🌲 §a+{amount} XP §7(Рубка деревьев)"
@@ -43,7 +45,6 @@ xp:
 
 # ─── Названия действий (для xp.farming и xp.hunting) ──
 names:
-  # Фермерство
   wheats: "Пшеница"
   carrots: "Морковь"
   potatoes: "Картошка"
@@ -52,7 +53,6 @@ names:
   berry: "Ягоды"
   honey_bottle: "Мёд"
   honeycomb: "Соты"
-  # Охота — для мобов используется EntityType.name()
 
 # ─── Команда /cubixlevel ─────────────────────
 command:
@@ -65,6 +65,56 @@ command:
     - "§e/cubixlevel stats §7— статистика"
     - "§e/cubixlevel daily §7— ежедневный бонус"
     - "§e/cubixlevel reload §7— перезагрузить конфиг"
+    - "§e/cubixlevel admin <sub> §7— админ-команды"
+
+# ─── Админ-команды ───────────────────────────
+admin:
+  help_header: "§6╔═══════════════════════════════╗"
+  help_title: "§6║ §lCubixLevels Admin §r§6       ║"
+  help_footer: "§6╚═══════════════════════════════╝"
+  help_commands:
+    - "§e/cl admin info <player> §7— информация об игроке"
+    - "§e/cl admin setlevel <player> <level> §7— установить уровень"
+    - "§e/cl admin addxp <player> <amount> §7— добавить опыт"
+    - "§e/cl admin removexp <player> <amount> §7— забрать опыт"
+    - "§e/cl admin reset <player> §7— сбросить прогресс"
+  no_permission: "§c❌ У вас нет прав на админ-команды!"
+  unknown_subcommand: "§c❌ Неизвестная подкоманда. Используйте §e/cubixlevel admin §7для справки."
+
+  # Установка уровня
+  setlevel_usage: "§c❌ Использование: §e/cubixlevel admin setlevel <player> <level>"
+  setlevel_invalid_level: "§c❌ Уровень должен быть числом от 0 до {max}!"
+  setlevel_success: "§a✔ Уровень игрока §e{target} §aустановлен на §e{level}§a!"
+  setlevel_notified: "§e✦ §aАдминистратор установил твой уровень: §e{level}"
+
+  # Добавление XP
+  addxp_usage: "§c❌ Использование: §e/cubixlevel admin addxp <player> <amount>"
+  addxp_invalid_amount: "§c❌ Количество XP должно быть положительным числом!"
+  addxp_success: "§a✔ Добавлено §e{amount} XP §aигроку §e{target}§a!"
+  addxp_notified: "§e✦ §aАдминистратор добавил тебе §e{amount} XP"
+
+  # Забирание XP
+  removexp_usage: "§c❌ Использование: §e/cubixlevel admin removexp <player> <amount>"
+  removexp_invalid_amount: "§c❌ Количество XP должно быть положительным числом!"
+  removexp_success: "§a✔ Забрано §e{amount} XP §aу игрока §e{target}§a!"
+  removexp_notified: "§e✦ §cАдминистратор забрал у тебя §e{amount} XP"
+
+  # Сброс игрока
+  reset_usage: "§c❌ Использование: §e/cubixlevel admin reset <player>"
+  reset_confirm: "§c⚠ Вы уверены? Используйте §e/cubixlevel admin reset {target} confirm"
+  reset_success: "§a✔ Прогресс игрока §e{target} §aсброшен!"
+  reset_notified: "§c✦ Ваш прогресс CubixLevel был сброшен администратором!"
+
+  # Информация об игроке
+  info_header: "§6╔═══════════════════════════════╗"
+  info_name: "§6║ §lИнформация: §e{target}"
+  info_footer: "§6╚═══════════════════════════════╝"
+  info_uuid: "§eUUID: §f{uuid}"
+  info_level: "§eУровень: §f{level} §7/ {max}"
+  info_xp: "§eОпыт: §f{xp} XP"
+  info_xp_needed: "§eДо следующего уровня: §f{needed} XP §7({percent}%)"
+  info_playtime: "§eВремя игры: §f{playtime}"
+  info_progress_bar: "§eПрогресс: §f{progress}"
 
 # ─── Статистика игрока ───────────────────────
 stats:

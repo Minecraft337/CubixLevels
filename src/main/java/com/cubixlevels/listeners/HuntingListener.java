@@ -31,6 +31,7 @@ public class HuntingListener implements Listener {
         if (xp <= 0) return;
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
+        plugin.setLastAction(player.getUniqueId(), "Hunting");
         player.sendMessage(MessagesManager.replace(
                 MessagesManager.getString("xp.hunting", "§7⚔ §a+{amount} XP §7({action})"),
                 "amount", formatXp(xp), "action", getMobName(type)));

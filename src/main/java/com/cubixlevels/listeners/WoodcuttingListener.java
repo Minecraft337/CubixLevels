@@ -32,6 +32,7 @@ public class WoodcuttingListener implements Listener {
         if (!plugin.getNaturalCheck().isNaturalLog(block)) return;
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
+        plugin.setLastAction(player.getUniqueId(), "Woodcutting");
         player.sendMessage(MessagesManager.format("xp.woodcutting", "§7🌲 §a+{amount} XP §7(Woodcutting)",
                 "amount", formatXp(xp)));
     }

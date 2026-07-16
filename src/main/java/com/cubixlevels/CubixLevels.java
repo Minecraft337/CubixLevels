@@ -39,8 +39,9 @@ public final class CubixLevels extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlaytimeListener(this), this);
         getServer().getPluginManager().registerEvents(new DailyBonusListener(this), this);
 
-        // Register command
+        // Register command + tab completer
         getCommand("cubixlevel").setExecutor(new CubixLevelCommand(this));
+        getCommand("cubixlevel").setTabCompleter(new CubixLevelTabCompleter());
 
         // PlaceholderAPI hook
         this.hasPlaceholderAPI = getServer().getPluginManager().getPlugin("PlaceholderAPI") != null;
@@ -90,6 +91,12 @@ public final class CubixLevels extends JavaPlugin {
     public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
     public NaturalCheck getNaturalCheck() { return naturalCheck; }
     public boolean hasPlaceholderAPI() { return hasPlaceholderAPI; }
+
+    public void setLastAction(java.util.UUID uuid, String action) {
+        if (hasPlaceholderAPI) {
+            CubixPlaceholderExpansion.setLastAction(uuid, action);
+        }
+    }
 
     public File getPlayerDataFolder() {
         File folder = new File(getDataFolder(), "playerdata");

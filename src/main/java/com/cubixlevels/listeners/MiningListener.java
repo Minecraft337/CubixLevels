@@ -32,6 +32,7 @@ public class MiningListener implements Listener {
         if (!plugin.getNaturalCheck().isNaturalOre(block)) return;
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
+        plugin.setLastAction(player.getUniqueId(), "Mining");
         player.sendMessage(MessagesManager.format("xp.mining", "§7⛏ §a+{amount} XP §7(Mining)",
                 "amount", formatXp(xp)));
     }

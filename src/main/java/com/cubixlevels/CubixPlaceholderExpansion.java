@@ -5,17 +5,29 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class CubixPlaceholderExpansion extends PlaceholderExpansion {
 
     private final CubixLevels plugin;
+    private static final Map<UUID, String> lastActions = new HashMap<>();
 
     public CubixPlaceholderExpansion(CubixLevels plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Сохраняет последнее действие игрока для плейсхолдера %cubixlevel_action%.
+     */
+    public static void setLastAction(UUID uuid, String action) {
+        lastActions.put(uuid, action);
+    }
+
     @Override
     public @NotNull String getIdentifier() {
-        return "cubix";
+        return "cubixlevel";
     }
 
     @Override
@@ -30,7 +42,7 @@ public class CubixPlaceholderExpansion extends PlaceholderExpansion {
 
     @Override
     public boolean persist() {
-        return true; // Keep registered even after /reload
+        return true;
     }
 
     @Override
@@ -43,8 +55,23 @@ public class CubixPlaceholderExpansion extends PlaceholderExpansion {
         if (player == null) return "0";
 
         return switch (params.toLowerCase()) {
+            // %cubixlevel_player% — имя игрока
+            case "player" -> player.getName();
+
+            // %cubixlevel_level% — текущий уровень
             case "level" -> String.valueOf(plugin.getLevelManager().getLevel(player.getUniqueId()));
-            case "level_xp" -> formatXp(plugin.getLevelManager().getXp(player.getUniqueId()));
+
+            // %cubixlevel_xp% — текущий опыт
+            case "xp" -> formatXp(plugin.getLevelManager().getXp(player.getUniqueId()));
+
+            // %cubixlevel_amount% — сколько XP нужно до следующего уровня
+            case "amount" -> formatXp(plugin.getLevelManager().getXpForNextLevel(
+                    plugin.getLevelManager().getLevel(player.getUniqueId())));
+
+            // %cubixlevel_action% — последнее действие игрока (Mining, Farming, Hunting, Fishing, Woodcutting, Daily, Distance, Playtime)
+            case "action" -> lastActions.getOrDefault(player.getUniqueId(), "—");
+
+            // Дополнительные (от прошлой версии)
             case "level_xp_needed" -> formatXp(plugin.getLevelManager().getXpForNextLevel(
                     plugin.getLevelManager().getLevel(player.getUniqueId())));
             case "level_progress" -> {

@@ -17,8 +17,32 @@ commands:
 permissions:
   cubixlevels.user:
     default: true
-  cubixlevels.admin:
-    default: op
+    description: "Базовые команды: /cubixlevel, /cubixlevel daily, /cubixlevel stats"
+
   cubixlevels.reload:
     default: op
-    description: Permission to reload CubixLevels config
+    description: "Перезагрузка конфига (/cubixlevel reload)"
+
+  cubixlevels.admin:
+    default: op
+    description: "Доступ ко всем админ-командам"
+
+  cubixlevels.admin.setlevel:
+    default: op
+    description: "Установить уровень игроку (/cubixlevel admin setlevel <player> <level>)"
+
+  cubixlevels.admin.addxp:
+    default: op
+    description: "Добавить XP игроку (/cubixlevel admin addxp <player> <amount>)"
+
+  cubixlevels.admin.removexp:
+    default: op
+    description: "Забрать XP у игрока (/cubixlevel admin removexp <player> <amount>)"
+
+  cubixlevels.admin.reset:
+    default: op
+    description: "Сбросить прогресс игрока (/cubixlevel admin reset <player>)"
+
+  cubixlevels.admin.info:
+    default: op
+    description: "Показать информацию о игроке (/cubixlevel admin info <player>)"

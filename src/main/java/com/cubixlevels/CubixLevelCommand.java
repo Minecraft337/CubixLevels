@@ -1,6 +1,8 @@
 package com.cubixlevels;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
+import java.util.UUID;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -29,57 +31,338 @@ public class CubixLevelCommand implements CommandExecutor {
             return true;
         }
 
-        switch (args[0].toLowerCase()) {
-            case "reload" -> {
-                if (!sender.hasPermission("cubixlevels.reload")) {
-                    sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ You don't have permission!"));
-                    return true;
-                }
-                plugin.reloadConfig();
-                MessagesManager.reload();
-                plugin.getLevelManager().reload();
-                // Resync all online players' cached values
-                for (org.bukkit.entity.Player p : plugin.getServer().getOnlinePlayers()) {
-                    plugin.getPlayerDataManager().syncToManagers(p.getUniqueId());
-                }
-                sender.sendMessage(MessagesManager.getString("general.config_reloaded", "§a✔ Configuration reloaded!"));
+        return switch (args[0].toLowerCase()) {
+            case "reload" -> handleReload(sender);
+            case "daily" -> handleDaily(sender);
+            case "stats" -> handleStats(sender);
+            case "admin" -> handleAdmin(sender, args);
+            default -> handleHelp(sender);
+        };
+    }
+
+    // ─── Обработчики команд ─────────────────────
+
+    private boolean handleReload(CommandSender sender) {
+        if (!sender.hasPermission("cubixlevels.reload")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ You don't have permission!"));
+            return true;
+        }
+        plugin.reloadConfig();
+        MessagesManager.reload();
+        plugin.getLevelManager().reload();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            plugin.getPlayerDataManager().syncToManagers(p.getUniqueId());
+        }
+        sender.sendMessage(MessagesManager.getString("general.config_reloaded", "§a✔ Configuration reloaded!"));
+        return true;
+    }
+
+    private boolean handleDaily(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(MessagesManager.getString("general.player_only", "§c❌ Only players can use this command!"));
+            return true;
+        }
+        if (plugin.getPlayerDataManager().canClaimDailyBonus(player.getUniqueId())) {
+            plugin.getPlayerDataManager().claimDailyBonus(player.getUniqueId(), player);
+        } else {
+            player.sendMessage(MessagesManager.getString("general.already_daily", "§c❌ You already claimed daily bonus today!"));
+        }
+        return true;
+    }
+
+    private boolean handleStats(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(MessagesManager.getString("general.player_only", "§c❌ Only players can use this command!"));
+            return true;
+        }
+        showStats(player);
+        return true;
+    }
+
+    private boolean handleHelp(CommandSender sender) {
+        if (sender.hasPermission("cubixlevels.admin")) {
+            for (String line : MessagesManager.getStringList("command.help_admin",
+                    List.of("§e/cubixlevel §7— stats", "§e/cubixlevel stats §7— stats",
+                            "§e/cubixlevel daily §7— daily bonus", "§e/cubixlevel reload §7— reload config",
+                            "§e/cubixlevel admin §7— admin commands"))) {
+                sender.sendMessage(line);
             }
-            case "daily" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(MessagesManager.getString("general.player_only", "§c❌ Only players can use this command!"));
-                    return true;
-                }
-                if (plugin.getPlayerDataManager().canClaimDailyBonus(player.getUniqueId())) {
-                    plugin.getPlayerDataManager().claimDailyBonus(player.getUniqueId(), player);
-                } else {
-                    player.sendMessage(MessagesManager.getString("general.already_daily", "§c❌ You already claimed daily bonus today!"));
-                }
-            }
-            case "stats" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(MessagesManager.getString("general.player_only", "§c❌ Only players can use this command!"));
-                    return true;
-                }
-                showStats(player);
-            }
-            default -> {
-                if (sender.hasPermission("cubixlevels.admin")) {
-                    for (String line : MessagesManager.getStringList("command.help_admin",
-                            List.of("§e/cubixlevel §7— stats", "§e/cubixlevel stats §7— stats", "§e/cubixlevel daily §7— daily bonus", "§e/cubixlevel reload §7— reload config"))) {
-                        sender.sendMessage(line);
-                    }
-                } else {
-                    String version = plugin.getDescription().getVersion();
-                    sender.sendMessage(MessagesManager.format("command.help_header", "§6CubixLevels §7v{version}", "version", version));
-                    for (String line : MessagesManager.getStringList("command.help_player",
-                            List.of("§e/cubixlevel §7— stats", "§e/cubixlevel daily §7— daily bonus"))) {
-                        sender.sendMessage(line);
-                    }
-                }
+        } else {
+            sender.sendMessage(MessagesManager.format("command.help_header", "§6CubixLevels §7v{version}",
+                    "version", plugin.getDescription().getVersion()));
+            for (String line : MessagesManager.getStringList("command.help_player",
+                    List.of("§e/cubixlevel §7— stats", "§e/cubixlevel daily §7— daily bonus"))) {
+                sender.sendMessage(line);
             }
         }
         return true;
     }
+
+    // ─── Админ-команды ─────────────────────────
+
+    private boolean handleAdmin(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("admin.no_permission", "§c❌ You don't have admin permission!"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            showAdminHelp(sender);
+            return true;
+        }
+
+        return switch (args[1].toLowerCase()) {
+            case "setlevel" -> handleSetLevel(sender, args);
+            case "addxp" -> handleAddXp(sender, args);
+            case "removexp" -> handleRemoveXp(sender, args);
+            case "reset" -> handleReset(sender, args);
+            case "info" -> handleInfo(sender, args);
+            default -> {
+                sender.sendMessage(MessagesManager.getString("admin.unknown_subcommand", "§c❌ Unknown subcommand!"));
+                showAdminHelp(sender);
+                yield true;
+            }
+        };
+    }
+
+    private void showAdminHelp(CommandSender sender) {
+        sender.sendMessage(MessagesManager.getString("admin.help_header", "§6╔═══════════════════════════════╗"));
+        sender.sendMessage(MessagesManager.getString("admin.help_title", "§6║ §lCubixLevels Admin §r§6       ║"));
+        sender.sendMessage(MessagesManager.getString("admin.help_footer", "§6╚═══════════════════════════════╝"));
+        for (String line : MessagesManager.getStringList("admin.help_commands",
+                List.of("§e/cl admin info <player>", "§e/cl admin setlevel <player> <level>",
+                        "§e/cl admin addxp <player> <amount>", "§e/cl admin removexp <player> <amount>",
+                        "§e/cl admin reset <player>"))) {
+            sender.sendMessage(line);
+        }
+    }
+
+    /**
+     * /cubixlevel admin setlevel <player> <level>
+     */
+    private boolean handleSetLevel(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin.setlevel") && !sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ No permission!"));
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(MessagesManager.getString("admin.setlevel_usage", "§c❌ Usage: /cubixlevel admin setlevel <player> <level>"));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            sender.sendMessage(MessagesManager.format("general.player_not_found", "§c❌ Player §e{player} §cnot found!", "player", args[2]));
+            return true;
+        }
+
+        int level;
+        try {
+            level = Integer.parseInt(args[3]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(MessagesManager.getString("admin.setlevel_invalid_level", "§c❌ Level must be a number!"));
+            return true;
+        }
+
+        int maxLevel = plugin.getLevelManager().getMaxLevel();
+        if (level < 0 || level > maxLevel) {
+            sender.sendMessage(MessagesManager.format("admin.setlevel_invalid_level", "§c❌ Level must be 0-{max}!",
+                    "max", String.valueOf(maxLevel)));
+            return true;
+        }
+
+        plugin.getPlayerDataManager().setLevel(target.getUniqueId(), level);
+        plugin.getPlayerDataManager().setXp(target.getUniqueId(), 0);
+        plugin.getPlayerDataManager().syncToManagers(target.getUniqueId());
+
+        sender.sendMessage(MessagesManager.format("admin.setlevel_success", "§a✔ Level set to §e{level} §afor §e{target}§a!",
+                "target", target.getName(), "level", String.valueOf(level)));
+        target.sendMessage(MessagesManager.format("admin.setlevel_notified", "§e✦ §aAdmin set your level: §e{level}",
+                "level", String.valueOf(level)));
+        return true;
+    }
+
+    /**
+     * /cubixlevel admin addxp <player> <amount>
+     */
+    private boolean handleAddXp(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin.addxp") && !sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ No permission!"));
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(MessagesManager.getString("admin.addxp_usage", "§c❌ Usage: /cubixlevel admin addxp <player> <amount>"));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            sender.sendMessage(MessagesManager.format("general.player_not_found", "§c❌ Player §e{player} §cnot found!", "player", args[2]));
+            return true;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(args[3]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(MessagesManager.getString("admin.addxp_invalid_amount", "§c❌ Amount must be a number!"));
+            return true;
+        }
+
+        if (amount <= 0) {
+            sender.sendMessage(MessagesManager.getString("admin.addxp_invalid_amount", "§c❌ Amount must be positive!"));
+            return true;
+        }
+
+        plugin.getPlayerDataManager().addXp(target.getUniqueId(), amount, target);
+        plugin.setLastAction(target.getUniqueId(), "Admin");
+
+        sender.sendMessage(MessagesManager.format("admin.addxp_success", "§a✔ Added §e{amount} XP §ato §e{target}§a!",
+                "target", target.getName(), "amount", formatXp(amount)));
+        target.sendMessage(MessagesManager.format("admin.addxp_notified", "§e✦ §aAdmin added §e{amount} XP",
+                "amount", formatXp(amount)));
+        return true;
+    }
+
+    /**
+     * /cubixlevel admin removexp <player> <amount>
+     */
+    private boolean handleRemoveXp(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin.removexp") && !sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ No permission!"));
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(MessagesManager.getString("admin.removexp_usage", "§c❌ Usage: /cubixlevel admin removexp <player> <amount>"));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            sender.sendMessage(MessagesManager.format("general.player_not_found", "§c❌ Player §e{player} §cnot found!", "player", args[2]));
+            return true;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(args[3]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(MessagesManager.getString("admin.removexp_invalid_amount", "§c❌ Amount must be a number!"));
+            return true;
+        }
+
+        if (amount <= 0) {
+            sender.sendMessage(MessagesManager.getString("admin.removexp_invalid_amount", "§c❌ Amount must be positive!"));
+            return true;
+        }
+
+        UUID uuid = target.getUniqueId();
+        double currentXp = plugin.getPlayerDataManager().getXp(uuid);
+        double newXp = Math.max(0, currentXp - amount);
+        plugin.getPlayerDataManager().setXp(uuid, newXp);
+        plugin.getPlayerDataManager().syncToManagers(uuid);
+
+        sender.sendMessage(MessagesManager.format("admin.removexp_success", "§a✔ Removed §e{amount} XP §afrom §e{target}§a!",
+                "target", target.getName(), "amount", formatXp(amount)));
+        target.sendMessage(MessagesManager.format("admin.removexp_notified", "§e✦ §cAdmin removed §e{amount} XP",
+                "amount", formatXp(amount)));
+        return true;
+    }
+
+    /**
+     * /cubixlevel admin reset <player> [confirm]
+     */
+    private boolean handleReset(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin.reset") && !sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ No permission!"));
+            return true;
+        }
+        if (args.length < 3) {
+            sender.sendMessage(MessagesManager.getString("admin.reset_usage", "§c❌ Usage: /cubixlevel admin reset <player>"));
+            return true;
+        }
+
+        // Требуется подтверждение
+        if (args.length < 4 || !args[3].equalsIgnoreCase("confirm")) {
+            sender.sendMessage(MessagesManager.format("admin.reset_confirm", "§c⚠ Are you sure? Use §e/cubixlevel admin reset {target} confirm",
+                    "target", args[2]));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[2]);
+        java.util.UUID uuid;
+        String targetName;
+
+        if (target != null) {
+            uuid = target.getUniqueId();
+            targetName = target.getName();
+        } else {
+            // Try to find offline player by name — use online player only
+            sender.sendMessage(MessagesManager.format("general.player_not_found", "§c❌ Player §e{player} §cnot found!", "player", args[2]));
+            return true;
+        }
+
+        plugin.getPlayerDataManager().setLevel(uuid, 0);
+        plugin.getPlayerDataManager().setXp(uuid, 0);
+        plugin.getPlayerDataManager().syncToManagers(uuid);
+
+        // Удаляем файл данных
+        java.io.File dataFile = new java.io.File(plugin.getPlayerDataFolder(), uuid.toString() + ".yml");
+        if (dataFile.exists()) dataFile.delete();
+
+        sender.sendMessage(MessagesManager.format("admin.reset_success", "§a✔ Player §e{target} §areset!",
+                "target", targetName));
+        if (target != null && target.isOnline()) {
+            target.sendMessage(MessagesManager.getString("admin.reset_notified", "§c✦ Your CubixLevel progress has been reset by admin!"));
+        }
+        return true;
+    }
+
+    /**
+     * /cubixlevel admin info <player>
+     */
+    private boolean handleInfo(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("cubixlevels.admin.info") && !sender.hasPermission("cubixlevels.admin")) {
+            sender.sendMessage(MessagesManager.getString("general.no_permission", "§c❌ No permission!"));
+            return true;
+        }
+        if (args.length < 3) {
+            sender.sendMessage(MessagesManager.getString("admin.info_usage", "§c❌ Usage: /cubixlevel admin info <player>"));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            sender.sendMessage(MessagesManager.format("general.player_not_found", "§c❌ Player §e{player} §cnot found!", "player", args[2]));
+            return true;
+        }
+
+        java.util.UUID uuid = target.getUniqueId();
+        String version = plugin.getDescription().getVersion();
+        int level = plugin.getLevelManager().getLevel(uuid);
+        double xp = plugin.getLevelManager().getXp(uuid);
+        double needed = plugin.getLevelManager().getXpForNextLevel(level);
+        int maxLevel = plugin.getLevelManager().getMaxLevel();
+        int progressPercent = needed > 0 ? (int) ((xp / needed) * 100) : 0;
+        int playtimeSeconds = plugin.getPlayerDataManager().getPlaytimeSeconds(uuid);
+        String playtime = formatPlaytime(playtimeSeconds);
+
+        sender.sendMessage(MessagesManager.getString("admin.info_header", "§6╔═══════════════════════════════╗"));
+        sender.sendMessage(MessagesManager.format("admin.info_name", "§6║ §lInfo: §e{target}", "target", target.getName()));
+        sender.sendMessage(MessagesManager.getString("admin.info_footer", "§6╚═══════════════════════════════╝"));
+        sender.sendMessage(MessagesManager.format("admin.info_uuid", "§eUUID: §f{uuid}", "uuid", uuid.toString()));
+        sender.sendMessage(MessagesManager.format("admin.info_level", "§eLevel: §f{level} §7/ {max}",
+                "level", String.valueOf(level), "max", String.valueOf(maxLevel)));
+        sender.sendMessage(MessagesManager.format("admin.info_xp", "§eXP: §f{xp}", "xp", formatXp(xp)));
+        sender.sendMessage(MessagesManager.format("admin.info_xp_needed", "§eTo next level: §f{needed} XP §7({percent}%)",
+                "needed", formatXp(needed), "percent", String.valueOf(Math.min(progressPercent, 100))));
+        sender.sendMessage(MessagesManager.format("admin.info_playtime", "§ePlaytime: §f{playtime}", "playtime", playtime));
+        sender.sendMessage(MessagesManager.format("admin.info_progress_bar", "§eProgress: §f{progress}",
+                "progress", progressBar(progressPercent)));
+        return true;
+    }
+
+    // ─── Вспомогательные методы ────────────────
 
     private void showStats(Player player) {
         var uuid = player.getUniqueId();
@@ -91,7 +374,6 @@ public class CubixLevelCommand implements CommandExecutor {
         player.sendMessage(MessagesManager.getString("stats.header", "§6╔══════════════════════════════╗"));
         player.sendMessage(MessagesManager.getString("stats.title", "§6║ §lCubixLevels §r§6— Your progress ║"));
         player.sendMessage(MessagesManager.getString("stats.footer", "§6╚══════════════════════════════╝"));
-
         player.sendMessage(MessagesManager.format("stats.level", "§e✦ Level: §f{level} §7/ {max}",
                 "level", String.valueOf(level), "max", String.valueOf(maxLevel)));
 
@@ -122,5 +404,12 @@ public class CubixLevelCommand implements CommandExecutor {
     private String formatXp(double xp) {
         if (xp == (long) xp) return String.valueOf((long) xp);
         return String.format("%.1f", xp);
+    }
+
+    private String formatPlaytime(int seconds) {
+        int hours = seconds / 3600;
+        int minutes = (seconds % 3600) / 60;
+        if (hours > 0) return hours + "ч " + minutes + "мин";
+        return minutes + "мин";
     }
 }

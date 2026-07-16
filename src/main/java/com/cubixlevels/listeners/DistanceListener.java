@@ -55,6 +55,7 @@ public class DistanceListener implements Listener {
             cumulative -= interval;
             cumulativeDistance.put(uuid, cumulative);
             plugin.getPlayerDataManager().addXp(uuid, xpAmount, player);
+            plugin.setLastAction(uuid, "Distance");
             player.sendMessage(MessagesManager.format("xp.distance", "§7🚶 §a+{amount} XP §7(§7{blocks} blocks)",
                     "amount", String.valueOf(xpAmount), "blocks", String.valueOf(interval)));
         }
