@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.cubixlevels'
-version = '1.0.0'
+version = '1.1.0'
 
 repositories {
     mavenCentral()
@@ -31,6 +31,48 @@ shadowJar {
     archiveBaseName.set('CubixLevels')
     archiveClassifier.set('')
     archiveVersion.set(project.version)
+}
+
+// =========================
+// Jar/ folder — артефакт всегда в git, удобно скачать с любого коммита
+// =========================
+tasks.register('copyJarToFolder') {
+    dependsOn(tasks.named('shadowJar'))
+    doLast {
+        def jarDir = new File(project.projectDir, "Jar")
+        def libsDir = new File(project.buildDir, "libs")
+
+        def source = libsDir.listFiles()?.find { f ->
+            f.name.endsWith(".jar") && !f.name.contains("sources") && !f.name.contains("javadoc")
+        }
+
+        if (source == null || !source.exists()) {
+            logger.warn("[JAR] Файл не найден в build/libs/")
+            return
+        }
+
+        jarDir.mkdirs()
+
+        // Удаляем старые JAR'ы в Jar/
+        jarDir.listFiles()?.each { f ->
+            if (f.name.endsWith(".jar") && f.delete()) {
+                logger.lifecycle("[JAR] Удалён старый: ${f.name}")
+            }
+        }
+
+        def jarName = "CubixLevels-${project.version}.jar"
+        def target = new File(jarDir, jarName)
+        java.nio.file.Files.copy(
+            source.toPath(),
+            target.toPath(),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+        )
+        logger.lifecycle("[JAR] Скопирован в Jar/: ${jarName}")
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn(tasks.named('copyJarToFolder'))
 }
 
 build.dependsOn shadowJar
