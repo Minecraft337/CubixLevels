@@ -32,7 +32,7 @@ public class CubixPlaceholderExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getAuthor() {
-        return "Minecraft337";
+        return "rizer001";
     }
 
     @Override

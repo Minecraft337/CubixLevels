@@ -3,7 +3,7 @@ version: '1.0.0'
 main: com.cubixlevels.CubixLevels
 api-version: '1.21'
 description: Level system for Cubix server
-author: Minecraft337
+author: rizer001
 
 softdepend:
   - PlaceholderAPI
