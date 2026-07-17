@@ -43,20 +43,50 @@ public class NaturalCheck {
 
     /**
      * Check if a log was naturally generated (not player-placed).
+     * <p>
+     * Спускается по колонке брёвен вниз (до 30 блоков) в поисках натуральной
+     * почвы или камня. Это позволяет верхним брёвнам дерева тоже давать XP,
+     * а не только нижнему бревну (баг: старый код проверял только блок СНИЗУ).
      */
     public boolean isNaturalLog(Block block) {
-        Block below = block.getRelative(BlockFace.DOWN);
-        if (isNaturalSoil(below.getType()) || isNaturalStone(below.getType())) {
-            for (BlockFace face : new BlockFace[]{
-                    BlockFace.UP, BlockFace.NORTH, BlockFace.SOUTH,
-                    BlockFace.EAST, BlockFace.WEST
-            }) {
-                if (block.getRelative(face).getType().name().endsWith("_LEAVES")
-                        || block.getRelative(face).getType().name().endsWith("_WART_BLOCK")) {
+        Block current = block;
+        for (int i = 0; i < 30; i++) {
+            Block below = current.getRelative(BlockFace.DOWN);
+            Material belowType = below.getType();
+
+            if (isNaturalSoil(belowType) || isNaturalStone(belowType)) {
+                // Добрались до натурального блока под деревом — проверяем листву
+                if (hasLeavesAdjacent(block)) {
                     return true;
                 }
+                return true;
             }
-            return true;
+
+            // Если блок снизу НЕ бревно и НЕ ствол — конец, это не дерево
+            if (!isLogLike(belowType)) {
+                return false;
+            }
+
+            current = below; // продолжаем вниз по колонке
+        }
+        return false;
+    }
+
+    private boolean isLogLike(Material mat) {
+        String name = mat.name();
+        return name.endsWith("_LOG") || name.endsWith("_WOOD")
+                || name.endsWith("_STEM") || name.endsWith("_HYPHAE");
+    }
+
+    private boolean hasLeavesAdjacent(Block block) {
+        for (BlockFace face : new BlockFace[]{
+                BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH,
+                BlockFace.EAST, BlockFace.WEST
+        }) {
+            Material adj = block.getRelative(face).getType();
+            if (adj.name().endsWith("_LEAVES") || adj.name().endsWith("_WART_BLOCK")) {
+                return true;
+            }
         }
         return false;
     }

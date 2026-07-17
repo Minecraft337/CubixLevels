@@ -35,10 +35,10 @@ public class FarmingListener implements Listener {
             if (block.getBlockData() instanceof Ageable ageable) {
                 if (ageable.getAge() < ageable.getMaximumAge()) return;
             }
-            // Трекер: посаженные игроком культуры не дают XP
-            if (plugin.getPlacedBlockTracker().wasPlacedByPlayer(block)) {
-                return;
-            }
+            // 🌱 Ageable-культуры (WHEAT, CARROTS, POTATOES, BEETROOTS) растут из семян
+            // естественным путём — не проверяем wasPlacedByPlayer на самом блоке культуры,
+            // иначе фермеры не получат XP за выращенный урожай.
+            // Тыквы и арбузы обрабатываются ниже через проверку стебля.
             grantXp(player, xp, getCropName(type));
             return;
         }
@@ -70,10 +70,7 @@ public class FarmingListener implements Listener {
         if (type == Material.SWEET_BERRY_BUSH) {
             if (event.getClickedBlock().getBlockData() instanceof Ageable ageable) {
                 if (ageable.getAge() >= 2) {
-                    // Трекер: посаженные игроком кусты не дают XP
-                    if (plugin.getPlacedBlockTracker().wasPlacedByPlayer(event.getClickedBlock())) {
-                        return;
-                    }
+                    // 🌱 Ягодный куст растёт из саженца — XP даётся за сбор урожая
                     grantXp(event.getPlayer(),
                             plugin.getConfig().getDouble("farming.crops.SWEET_BERRY_BUSH", 0.5),
                             MessagesManager.getString("names.berry", "Berries"));
