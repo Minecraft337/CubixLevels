@@ -44,15 +44,20 @@ public class FarmingListener implements Listener {
         }
 
         if (type == Material.PUMPKIN) {
+            // 🐛 Фикс: проверяем ATTACHED_PUMPKIN_STEM тоже, т.к. в Minecraft 1.21+
+            // стебель тыквы превращается в ATTACHED_PUMPKIN_STEM когда плод вырос.
             if (plugin.getPlacedBlockTracker().wasPlacedByPlayer(block)
-                    || hasPlacedStemAdjacent(block, Material.PUMPKIN_STEM)) {
+                    || hasPlacedStemAdjacent(block, Material.PUMPKIN_STEM)
+                    || hasPlacedStemAdjacent(block, Material.ATTACHED_PUMPKIN_STEM)) {
                 return;
             }
             grantXp(player, plugin.getConfig().getDouble("farming.crops.PUMPKIN", 1.0),
                     MessagesManager.getString("names.pumpkin", "Pumpkin"));
         } else if (type == Material.MELON) {
+            // 🐛 Фикс: аналогично для арбуза
             if (plugin.getPlacedBlockTracker().wasPlacedByPlayer(block)
-                    || hasPlacedStemAdjacent(block, Material.MELON_STEM)) {
+                    || hasPlacedStemAdjacent(block, Material.MELON_STEM)
+                    || hasPlacedStemAdjacent(block, Material.ATTACHED_MELON_STEM)) {
                 return;
             }
             grantXp(player, plugin.getConfig().getDouble("farming.crops.MELON", 1.0),
@@ -134,9 +139,14 @@ public class FarmingListener implements Listener {
         if (xp <= 0) return;
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
         plugin.setLastAction(player.getUniqueId(), "Farming");
-        player.sendMessage(MessagesManager.replace(
+        String msg = MessagesManager.replace(
                 MessagesManager.getString("xp.farming", "§7🌾 §a+{amount} XP §7({action})"),
-                "amount", formatXp(xp), "action", name));
+                "amount", formatXp(xp), "action", name);
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+        } else {
+            player.sendMessage(msg);
+        }
     }
 
     private String formatXp(double xp) {

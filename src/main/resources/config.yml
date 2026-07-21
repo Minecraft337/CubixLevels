@@ -23,6 +23,9 @@ settings:
   distance-interval: 1000     # блоков на один тик XP
   xp-per-distance-interval: 5 # XP за каждый интервал
 
+  # 📢 Способ отправки XP-уведомлений: true = actionbar, false = чат
+  use-actionbar: true
+
   # ⏱ Настройки XP за отыгранное время
   playtime-interval: 1800     # секунд на один тик XP (1800 = 30 мин)
   xp-per-playtime-interval: 10

@@ -18,6 +18,15 @@ public class DistanceListener implements Listener {
     private final Map<UUID, Location> lastPosition = new HashMap<>();
     private final Map<UUID, Double> cumulativeDistance = new HashMap<>();
 
+    /**
+     * Максимальное расстояние за один PlayerMoveEvent, которое считается
+     * «пешим перемещением». Всё, что больше — телепортация (/tpa, /home, /spawn),
+     * и опыт за такую дистанцию не начисляется.
+     * Игрок может бежать со спринтом ~0.7 блоков/тик, лететь на элитрах ~2 блока/тик.
+     * 50 блоков за тик — гарантированная телепортация.
+     */
+    private static final double MAX_LEGIT_MOVE = 50.0;
+
     public DistanceListener(CubixLevels plugin) {
         this.plugin = plugin;
     }
@@ -42,6 +51,13 @@ public class DistanceListener implements Listener {
         double dz = event.getTo().getZ() - last.getZ();
         double distance = Math.sqrt(dx * dx + dz * dz);
 
+        // ─── Анти-ТП: если перемещение больше MAX_LEGIT_MOVE блоков за один тик,
+        // это телепортация. Не начисляем опыт, просто обновляем позицию и выходим.
+        if (distance > MAX_LEGIT_MOVE) {
+            lastPosition.put(uuid, event.getTo().clone());
+            return;
+        }
+
         if (distance < 1.0) return;
 
         double cumulative = cumulativeDistance.getOrDefault(uuid, 0.0);
@@ -56,10 +72,18 @@ public class DistanceListener implements Listener {
             cumulativeDistance.put(uuid, cumulative);
             plugin.getPlayerDataManager().addXp(uuid, xpAmount, player);
             plugin.setLastAction(uuid, "Distance");
-            player.sendMessage(MessagesManager.format("xp.distance", "§7🚶 §a+{amount} XP §7(§7{blocks} blocks)",
+            sendMessage(player, MessagesManager.format("xp.distance", "§7🚶 §a+{amount} XP §7(§7{blocks} blocks)",
                     "amount", String.valueOf(xpAmount), "blocks", String.valueOf(interval)));
         }
 
         lastPosition.put(uuid, event.getTo().clone());
+    }
+
+    private void sendMessage(Player player, String message) {
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(message));
+        } else {
+            player.sendMessage(message);
+        }
     }
 }

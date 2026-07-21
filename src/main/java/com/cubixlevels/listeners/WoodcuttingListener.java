@@ -39,8 +39,13 @@ public class WoodcuttingListener implements Listener {
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
         plugin.setLastAction(player.getUniqueId(), "Woodcutting");
-        player.sendMessage(MessagesManager.format("xp.woodcutting", "§7🌲 §a+{amount} XP §7(Woodcutting)",
-                "amount", formatXp(xp)));
+        String msg = MessagesManager.format("xp.woodcutting", "§7🌲 §a+{amount} XP §7(Рубка)",
+                "amount", formatXp(xp));
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+        } else {
+            player.sendMessage(msg);
+        }
     }
 
     private String formatXp(double xp) {

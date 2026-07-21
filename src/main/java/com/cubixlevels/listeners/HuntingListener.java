@@ -32,9 +32,14 @@ public class HuntingListener implements Listener {
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
         plugin.setLastAction(player.getUniqueId(), "Hunting");
-        player.sendMessage(MessagesManager.replace(
+        String msg = MessagesManager.replace(
                 MessagesManager.getString("xp.hunting", "§7⚔ §a+{amount} XP §7({action})"),
-                "amount", formatXp(xp), "action", getMobName(type)));
+                "amount", formatXp(xp), "action", getMobName(type));
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+        } else {
+            player.sendMessage(msg);
+        }
     }
 
     private String getMobName(EntityType type) {

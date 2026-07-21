@@ -142,8 +142,13 @@ public class PlayerDataManager {
         if (levelsGained > 0) {
             setLevel(uuid, data.level);
             setXp(uuid, data.xp);
-            player.sendMessage(MessagesManager.format("xp.level_up", "§a✦ §eLevel Up! §7Now you are §e{level} §7level! §a✦",
-                    "level", String.valueOf(data.level)));
+            String msg = MessagesManager.format("xp.level_up", "§a✦ §eLevel Up! §7Now you are §e{level} §7level! §a✦",
+                    "level", String.valueOf(data.level));
+            if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+            } else {
+                player.sendMessage(msg);
+            }
             player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
     }
@@ -165,8 +170,13 @@ public class PlayerDataManager {
             if (player != null && player.isOnline()) {
                 addXp(uuid, xpAmount, player);
                 plugin.setLastAction(uuid, "Playtime");
-                player.sendMessage(MessagesManager.format("xp.playtime", "§7⏱ §a+{amount} XP §7for playing ({minutes} min)",
-                        "amount", String.valueOf(xpAmount), "minutes", String.valueOf(interval / 60)));
+                String msg = MessagesManager.format("xp.playtime", "§7⏱ §a+{amount} XP §7за игру ({minutes} мин)",
+                        "amount", String.valueOf(xpAmount), "minutes", String.valueOf(interval / 60));
+                if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+                } else {
+                    player.sendMessage(msg);
+                }
             }
         }
     }
@@ -183,8 +193,13 @@ public class PlayerDataManager {
         int xp = plugin.getConfig().getInt("settings.daily-bonus-xp", 50);
         addXp(uuid, xp, player);
         plugin.setLastAction(uuid, "Daily");
-        player.sendMessage(MessagesManager.format("xp.daily_bonus_claim", "§6☀ §eDaily bonus: §a+{amount} XP",
-                "amount", String.valueOf(xp)));
+        String msg = MessagesManager.format("xp.daily_bonus_claim", "§6☀ §eЕжедневный бонус: §a+{amount} XP",
+                "amount", String.valueOf(xp));
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+        } else {
+            player.sendMessage(msg);
+        }
     }
 
     public void syncToManagers(UUID uuid) {

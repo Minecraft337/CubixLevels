@@ -39,8 +39,13 @@ public class MiningListener implements Listener {
 
         plugin.getPlayerDataManager().addXp(player.getUniqueId(), xp, player);
         plugin.setLastAction(player.getUniqueId(), "Mining");
-        player.sendMessage(MessagesManager.format("xp.mining", "§7⛏ §a+{amount} XP §7(Mining)",
-                "amount", formatXp(xp)));
+        String msg = MessagesManager.format("xp.mining", "§7⛏ §a+{amount} XP §7(Шахтёрство)",
+                "amount", formatXp(xp));
+        if (plugin.getConfig().getBoolean("settings.use-actionbar", true)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(msg));
+        } else {
+            player.sendMessage(msg);
+        }
     }
 
     private double getXpForBlock(Material mat) {
